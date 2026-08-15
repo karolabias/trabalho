@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from '@supabase/supabase-js';
+import ExecutionDock from "@/components/ExecutionDock";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -92,17 +93,6 @@ export default function Home() {
   const [isEditingBalance, setIsEditingBalance] = useState<boolean>(false);
   const [tempBalance, setTempBalance] = useState<string>(initialBalance.toString());
 
-  // Form states para Novo Trade
-  const [newPair, setNewPair] = useState("XAU/USD");
-  const [newType, setNewType] = useState<"BUY" | "SELL">("BUY");
-  const [newLot, setNewLot] = useState("0.1");
-  const [newPnl, setNewPnl] = useState("50");
-  const [newRr, setNewRr] = useState("1:2.5");
-  const [newDate, setNewDate] = useState("2026-08-01");
-  const [emotion, setEmotion] = useState("Neutral");
-  const [execution, setExecution] = useState<"Perfect" | "Good" | "FOMO" | "Revenge">("Perfect");
-  const [time, setTime] = useState("08:00");
-
   // Form states para Missed Trade
   const [missedPair, setMissedPair] = useState("XAU/USD");
   const [missedReason, setMissedReason] = useState("");
@@ -150,25 +140,6 @@ export default function Home() {
   const expectancy = trades.length > 0 
     ? (totalPnl / trades.length).toFixed(2) 
     : "0.00";
-
-  const handleAddTrade = (e: React.FormEvent) => {
-    e.preventDefault();
-    const trade: Trade = {
-      id: Date.now(),
-      pair: newPair,
-      type: newType,
-      lot: parseFloat(newLot) || 0.1,
-      pnl: parseFloat(newPnl) || 0,
-      date: newDate,
-      rr: newRr,
-      emotion,
-      execution,
-      time
-    };
-    setTrades([trade, ...trades]);
-    setActiveTab("dashboard");
-    setActiveSubTab("review");
-  };
 
   const handleAddMissed = (e: React.FormEvent) => {
     e.preventDefault();
@@ -271,66 +242,10 @@ export default function Home() {
           </button>
         </header>
 
-        {/* SECÇÃO DE ADICIONAR TRADE (Caso activeTab seja "add") */}
+        {/* SECÇÃO DE ADICIONAR TRADE COM O EXECUTION DOCK */}
         {activeTab === "add" && (
-          <div className="max-w-xl mx-auto bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl mb-6">
-            <h2 className="text-sm font-bold text-emerald-400 mb-4 uppercase">Registar Nova Operação</h2>
-            <form onSubmit={handleAddTrade} className="space-y-4 text-xs">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-slate-400 block mb-1">Par</label>
-                  <input type="text" value={newPair} onChange={(e) => setNewPair(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-white" />
-                </div>
-                <div>
-                  <label className="text-slate-400 block mb-1">Tipo</label>
-                  <select value={newType} onChange={(e) => setNewType(e.target.value as "BUY" | "SELL")} className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-white">
-                    <option value="BUY">BUY</option>
-                    <option value="SELL">SELL</option>
-                  </select>
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className="text-slate-400 block mb-1">Lots</label>
-                  <input type="number" step="0.01" value={newLot} onChange={(e) => setNewLot(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-white" />
-                </div>
-                <div>
-                  <label className="text-slate-400 block mb-1">P&L ($)</label>
-                  <input type="number" step="any" value={newPnl} onChange={(e) => setNewPnl(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-white" />
-                </div>
-                <div>
-                  <label className="text-slate-400 block mb-1">R:R</label>
-                  <input type="text" value={newRr} onChange={(e) => setNewRr(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-white" />
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className="text-slate-400 block mb-1">Data</label>
-                  <input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-white" />
-                </div>
-                <div>
-                  <label className="text-slate-400 block mb-1">Hora</label>
-                  <input type="text" value={time} onChange={(e) => setTime(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-white" />
-                </div>
-                <div>
-                  <label className="text-slate-400 block mb-1">Emoção</label>
-                  <input type="text" value={emotion} onChange={(e) => setEmotion(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-white" />
-                </div>
-              </div>
-              <div>
-                <label className="text-slate-400 block mb-1">Execução</label>
-                <select value={execution} onChange={(e) => setExecution(e.target.value as any)} className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-white">
-                  <option value="Perfect">Perfect</option>
-                  <option value="Good">Good</option>
-                  <option value="FOMO">FOMO</option>
-                  <option value="Revenge">Revenge</option>
-                </select>
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <button type="button" onClick={() => setActiveTab("dashboard")} className="bg-slate-800 px-4 py-2 rounded text-slate-300">Cancelar</button>
-                <button type="submit" className="bg-emerald-600 hover:bg-emerald-500 font-bold px-4 py-2 rounded text-white">Guardar Trade</button>
-              </div>
-            </form>
+          <div className="max-w-4xl mx-auto mb-6">
+            <ExecutionDock />
           </div>
         )}
 
@@ -599,75 +514,44 @@ export default function Home() {
 
         {/* SUB-ABA: TRADES DB */}
         {activeSubTab === "trades" && activeTab === "dashboard" && (
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl">
-            <h2 className="text-sm font-bold text-slate-200 mb-4">📁 Trades Database</h2>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="border-b border-slate-800 text-slate-400 bg-slate-950/50">
-                    <th className="p-3">Pair</th>
-                    <th className="p-3">Type</th>
-                    <th className="p-3">Lots</th>
-                    <th className="p-3">RR</th>
-                    <th className="p-3">Time</th>
-                    <th className="p-3">Emotion</th>
-                    <th className="p-3">Execution</th>
-                    <th className="p-3">P&L</th>
-                    <th className="p-3">Date</th>
-                    <th className="p-3">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800">
-                  {trades.map(t => (
-                    <tr key={t.id} className="hover:bg-slate-800/30">
-                      <td className="p-3 font-bold">{t.pair}</td>
-                      <td className={`p-3 font-bold ${t.type === "BUY" ? "text-emerald-400" : "text-red-400"}`}>{t.type}</td>
-                      <td className="p-3 text-slate-300">{t.lot}</td>
-                      <td className="p-3 text-sky-400">{t.rr}</td>
-                      <td className="p-3 text-slate-300">{t.time}</td>
-                      <td className="p-3 text-slate-300">{t.emotion}</td>
-                      <td className="p-3 text-amber-400 font-semibold">{t.execution}</td>
-                      <td className={`p-3 font-bold ${t.pnl >= 0 ? "text-emerald-400" : "text-red-400"}`}>{t.pnl >= 0 ? `+$${t.pnl}` : `-$${Math.abs(t.pnl)}`}</td>
-                      <td className="p-3 text-slate-400">{t.date}</td>
-                      <td className="p-3"><button onClick={() => handleDeleteTrade(t.id)} className="text-red-400 hover:underline">Delete</button></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl space-y-4 max-w-5xl mx-auto">
+            <h2 className="text-sm font-bold text-slate-100 uppercase">📁 Base de Dados de Trades Registados</h2>
+            <div className="space-y-2">
+              {trades.map(t => (
+                <div key={t.id} className="bg-slate-950 border border-slate-800 p-3 rounded-lg flex justify-between items-center text-xs">
+                  <div>
+                    <span className={`px-2 py-0.5 rounded font-bold mr-2 ${t.type === "BUY" ? "bg-emerald-950 text-emerald-400" : "bg-red-950 text-red-400"}`}>{t.type}</span>
+                    <span className="font-bold text-white">{t.pair}</span> ({t.lot} lots) — RR: {t.rr} | Emoção: {t.emotion} | Data: {t.date}
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <span className={`font-bold ${t.pnl >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                      {t.pnl >= 0 ? `+$${t.pnl}` : `-$${Math.abs(t.pnl)}`}
+                    </span>
+                    <button onClick={() => handleDeleteTrade(t.id)} className="text-red-400 hover:text-red-300">Apagar</button>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
 
         {/* SUB-ABA: MISSED TRADES DB */}
         {activeSubTab === "missed" && activeTab === "dashboard" && (
-          <div className="max-w-2xl mx-auto bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl space-y-6">
-            <h2 className="text-sm font-bold text-amber-400">⚠️ Missed Trades Database</h2>
-            <form onSubmit={handleAddMissed} className="space-y-3 text-xs bg-slate-950 p-4 rounded-xl border border-slate-800">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-slate-400 block mb-1">Pair</label>
-                  <input type="text" value={missedPair} onChange={(e) => setMissedPair(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white" />
-                </div>
-                <div>
-                  <label className="text-slate-400 block mb-1">Date</label>
-                  <input type="date" value={missedDate} onChange={(e) => setMissedDate(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white" />
-                </div>
-              </div>
-              <div>
-                <label className="text-slate-400 block mb-1">Reason / Reflection</label>
-                <textarea rows={2} value={missedReason} onChange={(e) => setMissedReason(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white" placeholder="Why did you miss this setup?" required />
-              </div>
-              <button type="submit" className="bg-amber-600 hover:bg-amber-500 text-white font-bold px-4 py-2 rounded">Add Missed Trade</button>
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl space-y-4 max-w-5xl mx-auto">
+            <h2 className="text-sm font-bold text-slate-100 uppercase">⚠️ Registo de Oportunidades Perdidas (Missed Trades)</h2>
+            <form onSubmit={handleAddMissed} className="grid grid-cols-1 md:grid-cols-4 gap-3 pt-2 text-xs">
+              <input type="text" value={missedPair} onChange={(e) => setMissedPair(e.target.value)} placeholder="Par" className="bg-slate-950 border border-slate-800 rounded p-2 text-white" />
+              <input type="text" value={missedReason} onChange={(e) => setMissedReason(e.target.value)} placeholder="Motivo / Razão (ex: Hesitação)" className="bg-slate-950 border border-slate-800 rounded p-2 text-white md:col-span-2" />
+              <button type="submit" className="bg-sky-600 hover:bg-sky-500 font-bold text-white rounded p-2">Adicionar Missed Trade</button>
             </form>
-
-            <div className="space-y-2">
+            <div className="space-y-2 pt-4">
               {missedTrades.map(m => (
                 <div key={m.id} className="bg-slate-950 border border-slate-800 p-3 rounded-lg text-xs flex justify-between items-center">
                   <div>
-                    <span className="font-bold text-amber-400">{m.pair}</span> <span className="text-slate-400">({m.date})</span>
-                    <p className="text-slate-300 mt-1">{m.reason}</p>
+                    <span className="font-bold text-amber-400 mr-2">[{m.pair}]</span>
+                    <span className="text-slate-300">{m.reason}</span>
                   </div>
-                  <button onClick={() => setMissedTrades(missedTrades.filter(x => x.id !== m.id))} className="text-red-400 text-[10px]">Remove</button>
+                  <span className="text-slate-500 text-[10px]">{m.date}</span>
                 </div>
               ))}
             </div>
@@ -676,18 +560,21 @@ export default function Home() {
 
         {/* SUB-ABA: MILESTONES */}
         {activeSubTab === "milestones" && activeTab === "dashboard" && (
-          <div className="max-w-2xl mx-auto bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl space-y-4 text-xs">
-            <h2 className="text-sm font-bold text-sky-400">🏆 Milestones & Growth Goals</h2>
-            <p className="text-slate-400 leading-relaxed">
-              Regista os teus marcos fundamentais no trading, consistência de capital e evolução psicológica com Smart Money Concepts.
-            </p>
-            <div className="space-y-3 pt-2">
-              <div className="bg-slate-950 border border-slate-800 p-4 rounded-xl flex items-center justify-between">
-                <div>
-                  <p className="font-bold text-slate-200">Primeiro mês consistente em XAU/USD</p>
-                  <p className="text-[10px] text-slate-500 mt-0.5">Manter o risco controlado e rácio de acerto estável.</p>
-                </div>
-                <span className="bg-emerald-950 text-emerald-400 border border-emerald-800/60 px-2.5 py-1 rounded-full text-[10px] font-bold">Ativo</span>
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl space-y-4 max-w-5xl mx-auto">
+            <h2 className="text-sm font-bold text-slate-100 uppercase">🏆 Milestones & Metas de Trading</h2>
+            <p className="text-xs text-slate-400">Objetivos institucionais alcançados e metas futuras de consistência e gestão de risco.</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 text-xs">
+              <div className="bg-slate-950 border border-slate-800 p-4 rounded-xl border-emerald-800/60">
+                <p className="font-bold text-emerald-400 uppercase">Meta 1: 10 Trades Disciplinados</p>
+                <p className="text-slate-400 mt-1">Concluído com foco estrito em SMC e gestão de lote.</p>
+              </div>
+              <div className="bg-slate-950 border border-slate-800 p-4 rounded-xl border-sky-800/60">
+                <p className="font-bold text-sky-400 uppercase">Meta 2: Zero Revenge Trading</p>
+                <p className="text-slate-400 mt-1">Manter o plano de contingência ativo após dias de drawdown.</p>
+              </div>
+              <div className="bg-slate-950 border border-slate-800 p-4 rounded-xl border-slate-800">
+                <p className="font-bold text-slate-300 uppercase">Meta 3: Crescimento Composto</p>
+                <p className="text-slate-400 mt-1">Alcançar 20% de retorno acumulado no mês de agosto.</p>
               </div>
             </div>
           </div>
