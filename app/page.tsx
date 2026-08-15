@@ -10,7 +10,7 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 export const supabase = createClient(supabaseUrl, supabaseKey);
 
 interface Trade {
-  id: number;
+  id: string | number;
   pair: string;
   type: "BUY" | "SELL";
   lot: number;
@@ -47,29 +47,7 @@ export default function Home() {
     return 2500;
   });
 
-  const [trades, setTrades] = useState<Trade[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("trader_trades");
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          return parsed.map((t: any) => ({
-            ...t,
-            pnl: typeof t.pnl === "number" ? t.pnl : parseFloat(t.pnl) || 0,
-            emotion: t.emotion || "Neutral",
-            execution: t.execution || "Perfect",
-            time: t.time || "08:00"
-          }));
-        } catch (e) {
-          return [];
-        }
-      }
-    }
-    return [
-      { id: 1, pair: "XAU/USD", type: "BUY", lot: 0.5, pnl: 180, date: "2026-08-01", rr: "1:3", emotion: "Confident", execution: "Perfect", time: "09:30" },
-      { id: 2, pair: "XAU/USD", type: "SELL", lot: 0.3, pnl: -100, date: "2026-08-03", rr: "1:2", emotion: "Anxious", execution: "FOMO", time: "14:15" }
-    ];
-  });
+  const [trades, setTrades] = useState<Trade[]>([]);
 
   const [missedTrades, setMissedTrades] = useState<MissedTrade[]>(() => {
     if (typeof window !== "undefined") {
@@ -102,13 +80,39 @@ export default function Home() {
   const [currentExp, setCurrentExp] = useState("");
   const [currentImg, setCurrentImg] = useState("");
 
+  // Buscar trades diretamente do Supabase
+  useEffect(() => {
+    async function fetchTrades() {
+      const { data, error } = await supabase
+        .from('trades')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Erro ao buscar trades do Supabase:', error);
+      } else if (data) {
+        const formattedTrades: Trade[] = data.map((t: any) => ({
+          id: t.id,
+          pair: t.asset || "XAU/USD",
+          type: t.type || "BUY",
+          lot: Number(t.lots || 1),
+          pnl: Number(t.net_pnl ?? t.pnl ?? 0),
+          date: t.created_at ? t.created_at.split('T')[0] : "2026-08-15",
+          rr: String(t.risk_reward || "1:2"),
+          emotion: t.emotion || "Disciplined",
+          execution: t.execution || "Perfect",
+          time: t.time || "08:00"
+        }));
+        setTrades(formattedTrades);
+      }
+    }
+
+    fetchTrades();
+  }, []);
+
   useEffect(() => {
     localStorage.setItem("trader_initial_balance", initialBalance.toString());
   }, [initialBalance]);
-
-  useEffect(() => {
-    localStorage.setItem("trader_trades", JSON.stringify(trades));
-  }, [trades]);
 
   useEffect(() => {
     localStorage.setItem("trader_missed", JSON.stringify(missedTrades));
@@ -167,9 +171,14 @@ export default function Home() {
     alert("Apontamentos guardados com sucesso!");
   };
 
-  const handleDeleteTrade = (id: number) => {
+  const handleDeleteTrade = async (id: string | number) => {
     if (confirm("Tens a certeza que pretendes apagar esta operação?")) {
-      setTrades(trades.filter(t => t.id !== id));
+      const { error } = await supabase.from('trades').delete().eq('id', id);
+      if (error) {
+        console.error("Erro ao apagar do Supabase:", error);
+      } else {
+        setTrades(trades.filter(t => t.id !== id));
+      }
     }
   };
 
